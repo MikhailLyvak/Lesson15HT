@@ -1,62 +1,143 @@
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.urls import reverse
 from .models import Anime, AnimeType
+from django.conf import settings
 
+settings.DEBUG = True
 
-class AnimeListTests(TestCase):
+class MoreAnimeTests(TestCase):
     def setUp(self):
-        anime_type = AnimeType.objects.create(name='Action')
-        Anime.objects.create(name='Naruto', description='An awesome anime', episodes=220, my_episode=150,
-                             my_rating=9, type=anime_type)
+        self.client = Client()
+        self.animeType = AnimeType.objects.create(name='Fantasy')
 
-    def test_index_view(self):
-        response = self.client.get(reverse('app_anime_list:index'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Мій список аніме на перегляд налічує:')
-        self.assertContains(response, 'Мій список аніме налічє:')
-        self.assertContains(response, 'Ви відвідали цей сайт')
+    def test_anime_create_view(self):
+        response = self.client.post(reverse('app_anime_list:anime-create'), {
+            'name': 'New Anime',
+            'description': 'New Description',
+            'type': self.animeType.pk,
+            'episodes': 24,
+            'my_episode': 10,
+            'my_rating': 9,
+            'url': 'http://newexample.com',
+            'is_watched': False
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Anime.objects.count(), 1)
 
-    def test_anime_list_view(self):
-        response = self.client.get(reverse('app_anime_list:anime-list'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Name')
-        self.assertContains(response, 'Description')
-        self.assertContains(response, 'Episodes')
-        self.assertContains(response, 'My Rating')
-        self.assertContains(response, 'Anime Type')
-        self.assertContains(response, 'Naruto')
-        self.assertContains(response, 'An awesome anime')
-        self.assertContains(response, '150 / 220')
-        self.assertContains(response, '9')
-        self.assertContains(response, 'Action')
+        anime = Anime.objects.get(name='New Anime')
+        self.assertEqual(anime.real_rating, 100)
 
-    def test_anime_model(self):
-        anime = Anime.objects.get(name='Naruto')
-        self.assertEqual(anime.description, 'An awesome anime')
-        self.assertEqual(anime.episodes, 220)
-        self.assertEqual(anime.my_episode, 150)
-        self.assertEqual(anime.my_rating, 9)
-        self.assertEqual(anime.type.name, 'Action')
-        
-    def test_anime_description_view(self):
-        anime_with_description = Anime.objects.create(
-            name='Anime With Description',
-            description='This anime has a description',
+    def test_anime_update_view(self):
+        anime = Anime.objects.create(
+            name='Existing Anime',
+            description='Existing Description',
+            type=self.animeType,
             episodes=12,
-            my_episode=12,
-            my_rating=8.5,
-            type=AnimeType.objects.create(name='Action')
+            my_episode=5,
+            my_rating=8,
+            real_rating=80,
+            url='http://example.com',
+            is_watched=False
         )
+        response = self.client.post(reverse('app_anime_list:anime-update', kwargs={'pk': anime.pk}), {
+            'name': 'Updated Anime',
+            'description': 'Updated Description',
+            'type': self.animeType.pk,
+            'episodes': 24,
+            'my_episode': 10,
+            'my_rating': 9,
+            'url': 'http://updatedexample.com',
+            'is_watched': False
+        })
+        self.assertEqual(response.status_code, 302)
+        anime.refresh_from_db()
+        self.assertEqual(anime.name, 'Updated Anime')
 
-        anime_without_description = Anime.objects.create(
-            name='Anime Without Description',
-            episodes=24,
-            my_episode=24,
-            my_rating=7.8,
-            type=AnimeType.objects.create(name='Adventure')
+    def test_anime_detail_view(self):
+        anime = Anime.objects.create(
+            name='Detail Anime',
+            description='Detail Description',
+            type=self.animeType,
+            episodes=12,
+            my_episode=5,
+            my_rating=8,
+            real_rating=80,
+            url='http://example.com',
+            is_watched=False
         )
+        response = self.client.get(reverse('app_anime_list:anime-detail', kwargs={'pk': anime.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Detail Anime')
 
-        response = self.client.get(reverse('app_anime_list:anime-list'))
-        self.assertContains(response, 'This anime has a description')
+    def test_delete_anime_view(self):
+        anime = Anime.objects.create(
+            name='Anime to Delete',
+            description='Description to Delete',
+            type=self.animeType,
+            episodes=12,
+            my_episode=5,
+            my_rating=8,
+            real_rating=80,
+            url='http://example.com',
+            is_watched=False
+        )
+        response = self.client.get(reverse('app_anime_list:anime-delete', kwargs={'pk': anime.pk}))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Anime.objects.count(), 0)
 
-        self.assertContains(response, '-==-')
+    def test_mark_item_as_watched_view(self):
+        anime = Anime.objects.create(
+            name='Anime to Mark as Watched',
+            description='Description to Mark as Watched',
+            type=self.animeType,
+            episodes=12,
+            my_episode=5,
+            my_rating=8,
+            real_rating=80,
+            url='http://example.com',
+            is_watched=False
+        )
+        response = self.client.get(reverse('app_anime_list:mark-as-watched', kwargs={'pk': anime.pk}))
+        anime.refresh_from_db()
+        self.assertTrue(anime.is_watched)
+        
+
+class AnimeCreateViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.animeType = AnimeType.objects.create(name='Fantasy')
+
+    def test_form_valid_with_fantasy_type(self):
+        form_data = {
+            'name': 'New Fantasy Anime',
+            'description': 'Description of a fantasy anime',
+            'type': self.animeType.pk,
+            'episodes': 12,
+            'my_episode': 5,
+            'my_rating': 8,
+            'url': 'http://example.com',
+            'is_watched': False
+        }
+
+        response = self.client.post(reverse('app_anime_list:anime-create'), data=form_data)
+        self.assertEqual(response.status_code, 302)
+        created_anime = Anime.objects.get(name='New Fantasy Anime')
+        self.assertEqual(created_anime.real_rating, 100)
+        
+    def test_form_valid_with_non_fantasy_type(self):
+        non_fantasy_type = AnimeType.objects.create(name='Non-Fantasy')
+        form_data = {
+            'name': 'New Non-Fantasy Anime',
+            'description': 'Description of a non-fantasy anime',
+            'type': non_fantasy_type.pk,
+            'episodes': 12,
+            'my_episode': 5,
+            'my_rating': 8,
+            'url': 'http://example.com',
+            'is_watched': False
+        }
+        # Sending a POST request to the create view
+        response = self.client.post(reverse('app_anime_list:anime-create'), data=form_data)
+        self.assertEqual(response.status_code, 302)
+        created_anime = Anime.objects.get(name='New Non-Fantasy Anime')
+        self.assertIsNone(created_anime.real_rating)

@@ -12,8 +12,12 @@ class Anime(models.Model):
     description = models.TextField(null=True, blank=True)
     type = models.ForeignKey(AnimeType, on_delete=models.CASCADE, null=True, blank=True)
     episodes = models.PositiveIntegerField(null=True, blank=True)
-    my_episode = models.PositiveIntegerField(null=False, blank=False)
-    my_rating = models.PositiveIntegerField(null=False, blank=False)
+    my_episode = models.PositiveIntegerField(null=True, blank=True)
+    my_rating = models.PositiveIntegerField(null=True, blank=True)
+    real_rating = models.PositiveIntegerField(null=True, blank=True)
+    url = models.URLField(null=True, blank=True)
+    is_watched = models.BooleanField(default=False)
+    watched_date = models.DateField(null=True, blank=True)
     
     def __str__(self) -> str:
         return f"{self.name} Rating: {self.my_rating} {self.type} | {self.my_episode}/{self.episodes}"

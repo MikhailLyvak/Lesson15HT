@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    My Card
+  </div>
+  <div class="card-body">
+    Мій список речей на покупку налічує: {{ num_anime }} шт.
+    <br>
+    Мій список речей налічє: {{ num_anime_types }} типів.
+    <br>
+    Ви відвідали цей сайт {{ num_visits }} разів!
+  </div>
+</div>
+<br>
+
+{% endblock content %}
