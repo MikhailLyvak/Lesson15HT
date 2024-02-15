@@ -30,59 +30,10 @@ class AnimeListView(generic.ListView):
     
     def get_queryset(self):
         return Anime.objects.select_related("type")
-    
-    def get_context_data(self, *args, **kwargs) -> dict:
-        context = super().get_context_data(**kwargs)
-        
-        context["total_amount"] = Anime.objects.count()
-        
-        return context
 
 
 class AnimeCreateView(generic.CreateView):
     model = Anime
     template_name = 'app_anime_list/create_anime.html'
-    fields = ["name", "description", "episodes", "type", "url"]
+    fields = "__all__"
     success_url = reverse_lazy('app_anime_list:anime-list')
-
-    def form_valid(self, form):
-        anime = form.save(commit=False)
-
-        if anime.type.name == "Fantasy":
-            anime.real_rating = 100
-        else:
-            anime.real_rating = None
-
-        anime.save()
-
-        return super().form_valid(form)
-    
-
-class AnimeUpdateView(generic.UpdateView):
-    model = Anime
-    template_name = 'app_anime_list/update_anime.html'
-    fields = ["name", "description", "episodes", "my_episode", "my_rating", "url"]
-    success_url = reverse_lazy('app_anime_list:anime-list')
-    
-
-class AnimeDetailView(generic.DetailView):
-    model = Anime
-    template_name = "app_anime_list/anime_detail.html"
-    context_object_name = "anime"
-    
-    def get_queryset(self):
-        return Anime.objects.select_related("type")
-
-
-def delete_anime(request, pk):
-    anime = Anime.objects.get(pk=pk)
-    anime.delete()
-    return redirect(reverse("app_anime_list:anime-list"))    
-
-
-def mark_item_as_watched(request, pk):
-    item = Anime.objects.get(pk=pk)
-    item.is_watched = True
-    item.watched_date = datetime.date.today()
-    item.save()
-    return redirect(reverse("app_anime_list:anime-list"))

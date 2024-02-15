@@ -8,7 +8,6 @@
       <div class="col-3">
         To buy list table
       </div>
-      <div class="col-3">Amount: {{ total_amount }} pcs.</div>
       <div class="col-3 text-end">
         <div class="d-flex justify-content-end">
           <a href="{% url 'app_anime_list:anime-create' %}" class="btn btn-primary">Add anime</a>
@@ -23,10 +22,6 @@
           <th>Name</th>
           <th>Price</th>
           <th>Anime Type</th>
-          <th>Update</th>
-          <th>Detail</th>
-          <th>Status</th>
-          <th>Delete</th>
         </tr>
       </thead>
       <tbody>
@@ -41,22 +36,6 @@
           </td>
           <td>
             {{ anime.type.name }}
-          </td>
-          <td>
-            <a class="text-warning" href="{% url 'app_anime_list:anime-update' pk=anime.pk %}">Update</a>
-          </td>
-          <td>
-            <a class="text-info" href="{% url 'app_anime_list:anime-detail' pk=anime.pk %}">Detail</a>
-          </td>
-          <td>
-            {% if anime.is_watched %}
-                <button class="btn btn-success" disabled>Watched!</button>
-            {% else %}
-                <a class="btn btn-primary" href="{% url 'app_anime_list:mark-as-watched' pk=anime.pk %}">Watch</a>
-            {% endif %}
-          </td>
-          <td>
-            <a class="text-danger" href="{% url 'app_anime_list:anime-delete' pk=anime.pk %}">Delete</a>
           </td>
         </tr>
         {% endfor %}
